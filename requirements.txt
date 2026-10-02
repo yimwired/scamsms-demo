@@ -1,0 +1,5 @@
+pythainlp==5.3.4
+scikit-learn==1.9.0
+pandas>=2.2
+joblib>=1.4
+streamlit==1.57.0

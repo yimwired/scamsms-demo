@@ -1,0 +1,65 @@
+{
+  "model": "Logistic Regression",
+  "n_total": 3001,
+  "n_real": {
+    "normal": 1767,
+    "scam": 1160
+  },
+  "n_seed": 74,
+  "cv": {
+    "Dummy (most_frequent)": {
+      "f1": 0.0,
+      "rec": 0.0,
+      "prec": 0.0
+    },
+    "Naive Bayes": {
+      "f1": 0.8746106929324201,
+      "rec": 0.7976360180565456,
+      "prec": 0.9695847646832974
+    },
+    "Logistic Regression": {
+      "f1": 0.9095832785887898,
+      "rec": 0.9031836540746021,
+      "prec": 0.9165300019539814
+    }
+  },
+  "test_on_real": {
+    "n_test": 732,
+    "f1_scam": 0.9172413793103448,
+    "recall_scam": 0.9172413793103448,
+    "precision_scam": 0.9172413793103448,
+    "confusion_matrix": [
+      [
+        418,
+        24
+      ],
+      [
+        24,
+        266
+      ]
+    ]
+  },
+  "test_by_origin": {
+    "ชุดข้อมูล ScamGuard": {
+      "n": 525,
+      "caught": 192,
+      "n_scam": 223,
+      "false_alarms": 29,
+      "n_normal": 302
+    },
+    "ชุดข้อมูล ssivakorn": {
+      "n": 2259,
+      "caught": 737,
+      "n_scam": 865,
+      "false_alarms": 274,
+      "n_normal": 1394
+    },
+    "มือถือตัวเอง": {
+      "n": 130,
+      "caught": 61,
+      "n_scam": 61,
+      "false_alarms": 9,
+      "n_normal": 69
+    }
+  }
+}
