@@ -1,0 +1,39 @@
+# Same palette and typeface as the brochure, so the booth table looks like one project.
+[server]
+enableStaticServing = true  # serves static/fonts so Sarabun works with no internet at the booth
+
+[client]
+toolbarMode = "viewer"  # no Deploy button or dev menu in front of visitors
+
+[theme]
+base = "light"
+primaryColor = "#2a78d6"
+backgroundColor = "#f3f6fb"
+secondaryBackgroundColor = "#eef3fa"
+textColor = "#1d2330"
+linkColor = "#2a78d6"
+borderColor = "#c9d6ea"
+showWidgetBorder = true
+baseRadius = "10px"
+font = "Sarabun, sans-serif"
+headingFont = "Sarabun, sans-serif"
+
+[[theme.fontFaces]]
+family = "Sarabun"
+url = "app/static/fonts/Sarabun-Regular.ttf"
+weight = "400"
+
+[[theme.fontFaces]]
+family = "Sarabun"
+url = "app/static/fonts/Sarabun-SemiBold.ttf"
+weight = "600"
+
+[[theme.fontFaces]]
+family = "Sarabun"
+url = "app/static/fonts/Sarabun-Bold.ttf"
+weight = "700"
+
+[[theme.fontFaces]]
+family = "Sarabun"
+url = "app/static/fonts/Sarabun-ExtraBold.ttf"
+weight = "800"
