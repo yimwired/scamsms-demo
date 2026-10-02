@@ -4,11 +4,13 @@ Colours and the Sarabun font come from .streamlit/config.toml, to match the broc
 import csv
 import html
 import json
+import re
 import sys
 from datetime import datetime
 from pathlib import Path
 
 import joblib
+import pandas as pd
 import streamlit as st
 
 from textprep import clean, mask_phone, tokenize
@@ -34,15 +36,16 @@ ORIGIN_TH = {"มือถือตัวเอง": "SMS ผู้จัดท�
 # Booth shortcuts: real SMS from the dataset, one genuine and one scam per topic, so visitors
 # guess which is fake before the model answers. They are in the training data, so these scores
 # are a demo, not evidence of accuracy (that is the cross-source test in evaluate.py).
-# Order matters: button i goes to column i % 4, which stacks each topic's pair in one column.
+# Kept in pairs, so the buttons wrap as 4 per row on a laptop and 2 per row on a phone
+# with each topic's ก and ข side by side either way.
 EXAMPLES = {
     "พัสดุ ก": "พัสดุหมายเลข 6226265185488 จัดส่งสำเร็จแล้ว",
-    "ธนาคาร ก": "【KTB】คุณได้รับสิทธิ์ยื่นกู้ 200,000 บาท คลิ๊ก cutt.ly/kZaupwZ",
-    "โปรโมชัน ก": "พิเศษเฉพาะคุณ! รับฟรีคูปองส่วนลดรวมสูงสุด 50บ. เมื่อช้อปครบทุก 100บ.* ที่บิ๊กซีมินิ ถึง 31 ต.ค.69 คลิก bit.ly/40SAMbS",
-    "หน่วยงานรัฐ ก": "การคืนเงินประกันการใช้ไฟฟ้า การไฟฟ้าส่วนภูมิภาคPEA ยืนยัน การลงทะเบียน เงื่อนไขการขอคืนเงินประกันฯ สอบถามเพิ่มเติมที่ ... bit.ly/3Bj872Z",
     "พัสดุ ข": "ขนส่งไม่สามารถจัดส่งพัสดุของคุณได้ เนื่องจากติดต่อผู้รับไม่ได้ ติดต่อเจ้าหน้าที่ยืนยันจัดส่งอีกครั้ง: www.for-sh.cc",
+    "ธนาคาร ก": "【KTB】คุณได้รับสิทธิ์ยื่นกู้ 200,000 บาท คลิ๊ก cutt.ly/kZaupwZ",
     "ธนาคาร ข": "เงินโอนเข้าบ/ชX1234 ผ่านระบบ 5,000.00บ ใช้ได้ 15,000.00บ@07:15",
+    "โปรโมชัน ก": "พิเศษเฉพาะคุณ! รับฟรีคูปองส่วนลดรวมสูงสุด 50บ. เมื่อช้อปครบทุก 100บ.* ที่บิ๊กซีมินิ ถึง 31 ต.ค.69 คลิก bit.ly/40SAMbS",
     "โปรโมชัน ข": "ยินดีด้วย คุณได้รับซองแดงกับ 5977 บาท คลิก cutt.ly/uedEGWlg",
+    "หน่วยงานรัฐ ก": "การคืนเงินประกันการใช้ไฟฟ้า การไฟฟ้าส่วนภูมิภาคPEA ยืนยัน การลงทะเบียน เงื่อนไขการขอคืนเงินประกันฯ สอบถามเพิ่มเติมที่ ... bit.ly/3Bj872Z",
     "หน่วยงานรัฐ ข": "ลงทะเบียนคนละครึ่งพลัสสำเร็จ คุณสามารถใช้สิทธิผ่านแอปฯ เป๋าตังได้ตั้งแต่วันที่ 29 ต.ค. 68 เป็นต้นไป",
 }
 
@@ -87,6 +90,19 @@ def contributions(pipe, text):
     return {names[i]: float(x[0, i] * w[i]) for i in idx}
 
 
+def feature_label(feature):
+    # Features can be word pairs ("คลิ๊ก xurl"), so translate each word. Visitors paste anything,
+    # so drop characters that markdown would read as syntax.
+    words = " ".join(PLACEHOLDER_TH.get(w, w) for w in feature.split())
+    return re.sub(r"[\[\]\\*_$`~]", "", words)
+
+
+def nowrap(text):
+    # Thai has no spaces, so a narrow phone screen breaks lines mid-word.
+    # Keep each space-separated word whole and let lines break only at the spaces.
+    return " ".join(f'<span style="white-space:nowrap">{word}</span>' for word in text.split(" "))
+
+
 def highlight(text, contrib):
     toks = tokenize(text)
     top = max((abs(v) for v in contrib.values()), default=1.0) or 1.0
@@ -106,8 +122,9 @@ def highlight(text, contrib):
     return " ".join(out)
 
 
-st.title("ScamSMS")
-st.caption("เช็ค SMS มิจฉาชีพภาษาไทย ด้วย Machine Learning · Mini Project 240-318 AI-ML")
+st.title(":blue[ScamSMS]")
+st.markdown("**เช็ค SMS มิจฉาชีพภาษาไทย ด้วย Machine&nbsp;Learning**")
+st.caption("Mini Project 240-318 AI-ML")
 
 pipe = load_model()
 if BOOTH:
@@ -120,10 +137,12 @@ with tab_check:
     if pipe is None:
         st.error("ยังไม่มี model.joblib - รัน `python train.py` ก่อน")
     else:
-        st.caption("ลองตัวอย่าง SMS จริง - แต่ละหัวข้อมีของจริง 1 ของหลอก 1 ทายก่อนว่าอันไหนหลอก")
-        cols = st.columns(4)
-        for i, (name, example) in enumerate(EXAMPLES.items()):
-            cols[i % 4].button(name, key=f"example_{i}", on_click=use_example, args=(example,), width="stretch")
+        st.markdown("**ลองตัวอย่าง SMS จริง** - แต่ละหัวข้อมีของจริง 1 ของหลอก 1 ทายก่อนว่าอันไหนหลอก")
+        # A wrapping row instead of st.columns, which would stack all 8 buttons on a phone.
+        # 160px fits 4 per row in the 704px centered layout and 2 per row on a 390px phone.
+        with st.container(horizontal=True, horizontal_alignment="distribute"):
+            for i, (name, example) in enumerate(EXAMPLES.items()):
+                st.button(name, key=f"example_{i}", on_click=use_example, args=(example,), width=160)
 
         txt = st.text_area("วาง SMS ที่ได้รับ (ออกแบบมาสำหรับ SMS ไม่ใช่แชทส่วนตัว)", key="msg", height=140,
                            placeholder="เช่น พัสดุของท่านถูกกักไว้ที่ศุลกากร กรุณาชำระค่าธรรมเนียม...")
@@ -142,18 +161,17 @@ with tab_check:
                 st.warning(f"### น่าสงสัย - {p:.0%}\nตรวจสอบผู้ส่งก่อนทำตามที่ข้อความบอก")
             else:
                 st.success(f"### น่าจะปลอดภัย - {p:.0%}")
-            st.progress(p)
 
             c = contributions(pipe, txt)
-            st.markdown("**คำที่ทำให้โมเดลคิดแบบนี้** - 🟥 ดันไปทางมิจฉาชีพ · 🟩 ดันไปทางปกติ")
-            st.markdown(f'<div style="line-height:2.1;font-size:1.05rem">{highlight(txt, c)}</div>', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown("**คำที่ทำให้โมเดลคิดแบบนี้**  \n"
+                            ":red-background[ดันไปทางมิจฉาชีพ] &nbsp; :green-background[ดันไปทางปกติ]")
+                st.markdown(f'<div style="line-height:2.1;font-size:1.05rem">{highlight(txt, c)}</div>', unsafe_allow_html=True)
 
-            pos = sorted(((k, v) for k, v in c.items() if v > 0), key=lambda kv: -kv[1])[:5]
-            if pos:
-                st.markdown("**เหตุผลหลัก**")
-                for k, v in pos:
-                    # features can be word pairs ("คลิ๊ก xurl"), so translate each word
-                    st.markdown(f"- {' '.join(PLACEHOLDER_TH.get(w, w) for w in k.split())}  (+{v:.2f})")
+                pos = sorted(((k, v) for k, v in c.items() if v > 0), key=lambda kv: -kv[1])[:5]
+                if pos:
+                    badges = " ".join(f":red-badge[{feature_label(k)} +{v:.2f}]" for k, v in pos)
+                    st.markdown(f"**เหตุผลหลัก** &nbsp; {badges}")
             st.caption("โมเดลเป็นตัวช่วยตัดสินใจ ไม่ใช่คำตัดสินสุดท้าย - ถ้าไม่แน่ใจ โทรถามหน่วยงานจากเบอร์ทางการเสมอ")
 
             # The brief asks the demo to show the process, not only the answer.
@@ -200,7 +218,6 @@ if tab_collect is not None:
                     w.writerow([mask_phone(t.strip()).replace("\n", " "), lab, "real", origin])
                 st.success("บันทึกแล้ว - รัน `python train.py` ใหม่เมื่อเก็บได้พอ")
         if DATA.exists():
-            import pandas as pd
             d = pd.read_csv(DATA)
             st.write(d.groupby(["origin", "label"]).size().unstack(fill_value=0))
 
@@ -211,20 +228,23 @@ with tab_about:
         real = s["data"]["real"]
         st.write(f"**โมเดล:** TF-IDF (คำเดี่ยว + คู่คำ) + Logistic Regression · "
                  f"ข้อความจริง หลอก {real.get('scam', 0):,} · ปกติ {real.get('normal', 0):,}")
+        st.markdown("**ค่าเฉลี่ยจากสุ่มแบ่ง 10 รอบ** (ข้อความจริง 25% เป็นชุดทดสอบ)")
         a, b, c = st.columns(3)
-        a.metric("จับของหลอกได้ (recall)", f"{lr['recall']['mean']:.0%}")
-        b.metric("เตือนแล้วถูก (precision)", f"{lr['precision']['mean']:.0%}")
-        c.metric("ปกติแต่โดนเตือน", f"{lr['false_alarm_rate']['mean']:.0%}")
-        st.caption("ค่าเฉลี่ยจากสุ่มแบ่ง 10 รอบ (ข้อความจริง 25% เป็นชุดทดสอบ)")
+        a.metric("จับของหลอกได้ (recall)", f"{lr['recall']['mean']:.0%}", border=True)
+        b.metric("เตือนแล้วถูก (precision)", f"{lr['precision']['mean']:.0%}", border=True)
+        c.metric("ปกติแต่โดนเตือน", f"{lr['false_alarm_rate']['mean']:.0%}", border=True)
 
         st.markdown(f"**เทียบกับเป้าหมาย** (จับได้ ≥ {GOAL_RECALL:.0%} · เตือนผิด ≤ {GOAL_FALSE_ALARM:.0%})")
-        rows = [("สุ่มแบ่ง 10 รอบ (ทุกแหล่ง)", lr["recall"]["mean"], lr["false_alarm_rate"]["mean"])]
+        rows = [(nowrap("สุ่มแบ่ง 10 รอบ (ทุกแหล่ง)"), lr["recall"]["mean"], lr["false_alarm_rate"]["mean"])]
         for origin, name in ORIGIN_TH.items():
             r = s["by_origin"][origin]["Logistic Regression"]
-            rows.append((f"ข้ามแหล่ง: {name}", r["recall"], r["false_alarm_rate"]))
-        st.dataframe([{"ชุดทดสอบ": name, "จับได้": f"{rec:.0%}", "เตือนผิด": f"{fa:.0%}",
-                       "ผล": "ผ่าน" if rec >= GOAL_RECALL and fa <= GOAL_FALSE_ALARM else "ยังไม่ถึง"}
-                      for name, rec, fa in rows], hide_index=True)
+            rows.append((nowrap(f"ข้ามแหล่ง: {name}"), r["recall"], r["false_alarm_rate"]))
+        table = f"| ชุดทดสอบ | จับได้ | {nowrap('เตือนผิด')} | ผล |\n|---|--:|--:|---|\n"
+        for name, rec, fa in rows:
+            passed = rec >= GOAL_RECALL and fa <= GOAL_FALSE_ALARM
+            result = ":green[**ผ่าน**]" if passed else nowrap(":orange[**ยังไม่ถึง**]")
+            table += f"| {name} | {rec:.0%} | {fa:.0%} | {result} |\n"
+        st.markdown(table, unsafe_allow_html=True)
         st.caption("ข้ามแหล่ง = train โดยไม่ใช้ข้อมูลจากแหล่งนั้น แล้วทดสอบกับแหล่งนั้น")
     elif METRICS.exists():
         m = json.loads(METRICS.read_text(encoding="utf-8"))
