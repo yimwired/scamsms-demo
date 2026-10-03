@@ -1,7 +1,4 @@
-# Same palette and typeface as the brochure, so the booth table looks like one project.
-[server]
-enableStaticServing = true  # serves static/fonts so Sarabun works with no internet at the booth
-
+# Same colours as the brochure; Streamlit's default font, so nothing extra to load at the booth.
 [client]
 toolbarMode = "viewer"  # no Deploy button or dev menu in front of visitors
 
@@ -15,38 +12,17 @@ linkColor = "#2a78d6"
 borderColor = "#c9d6ea"
 showWidgetBorder = true
 baseRadius = "10px"
-font = "Sarabun, sans-serif"
-headingFont = "Sarabun, sans-serif"
-baseFontSize = 17                   # Sarabun runs small; 16px Thai is tiring to read
-headingFontWeights = [800, 700, 700, 700, 700, 700]
-metricValueFontWeight = 800
+# The Thai fallback font has no 600 weight, so a 600 heading mixes bold Thai with semibold digits.
+headingFontWeights = 700
 # Brochure palette for alerts, badges and :color[] markdown
 blueColor = "#2a78d6"
 blueTextColor = "#17345f"
 blueBackgroundColor = "#e8eefa"
 redColor = "#d63b3b"
 greenColor = "#1a7f4b"
+greenTextColor = "#1a7f4b"
 greenBackgroundColor = "#e6f4ec"
 orangeColor = "#eb6834"
+orangeTextColor = "#b7791f"         # brochure amber for "ยังไม่ถึง", kept apart from the red verdict
 dataframeHeaderBackgroundColor = "#e8eefa"
 dataframeBorderColor = "#c9d6ea"
-
-[[theme.fontFaces]]
-family = "Sarabun"
-url = "app/static/fonts/Sarabun-Regular.ttf"
-weight = "400"
-
-[[theme.fontFaces]]
-family = "Sarabun"
-url = "app/static/fonts/Sarabun-SemiBold.ttf"
-weight = "600"
-
-[[theme.fontFaces]]
-family = "Sarabun"
-url = "app/static/fonts/Sarabun-Bold.ttf"
-weight = "700"
-
-[[theme.fontFaces]]
-family = "Sarabun"
-url = "app/static/fonts/Sarabun-ExtraBold.ttf"
-weight = "800"

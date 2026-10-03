@@ -1,6 +1,6 @@
 """Booth demo:  streamlit run app.py            (dev: all tabs)
              streamlit run app.py -- --booth  (booth: no data-collection tab)
-Colours and the Sarabun font come from .streamlit/config.toml, to match the brochure."""
+Colours come from .streamlit/config.toml, to match the brochure."""
 import csv
 import html
 import json
@@ -104,11 +104,11 @@ def nowrap(text):
 
 
 def highlight(text, contrib):
-    toks = tokenize(text)
+    toks = tokenize(text, lower=False)
     top = max((abs(v) for v in contrib.values()), default=1.0) or 1.0
     out = []
     for t in toks:
-        c = contrib.get(t, 0.0)
+        c = contrib.get(t.lower(), 0.0)
         label = html.escape(PLACEHOLDER_TH.get(t, t))
         style = "padding:1px 3px;border-radius:4px;white-space:nowrap"
         if c > 0.02 * top:
@@ -239,7 +239,7 @@ with tab_about:
         for origin, name in ORIGIN_TH.items():
             r = s["by_origin"][origin]["Logistic Regression"]
             rows.append((nowrap(f"ข้ามแหล่ง: {name}"), r["recall"], r["false_alarm_rate"]))
-        table = f"| ชุดทดสอบ | จับได้ | {nowrap('เตือนผิด')} | ผล |\n|---|--:|--:|---|\n"
+        table = f"| {nowrap('ชุดทดสอบ')} | {nowrap('จับได้')} | {nowrap('เตือนผิด')} | ผล |\n|---|--:|--:|---|\n"
         for name, rec, fa in rows:
             passed = rec >= GOAL_RECALL and fa <= GOAL_FALSE_ALARM
             result = ":green[**ผ่าน**]" if passed else nowrap(":orange[**ยังไม่ถึง**]")

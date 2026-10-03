@@ -29,16 +29,17 @@ def mask_phone(text: str) -> str:
     return PHONE_RE.sub(" xphone ", str(text))
 
 
-def clean(text: str) -> str:
+def clean(text: str, lower: bool = True) -> str:
     t = th_normalize(str(text))
     t = URL_RE.sub(" xurl ", t)
     t = LINE_RE.sub(" xlineid ", t)
     t = MONEY_RE.sub(" xmoney ", t)
     t = PHONE_RE.sub(" xphone ", t)
     t = NUM_RE.sub(" xnum ", t)
-    return t.lower()
+    return t.lower() if lower else t
 
 
-def tokenize(text: str) -> list[str]:
-    toks = word_tokenize(clean(text), engine="newmm", keep_whitespace=False)
+def tokenize(text: str, lower: bool = True) -> list[str]:
+    # lower=False is for display only (show "KTB" as the sender wrote it); the model always uses lower case.
+    toks = word_tokenize(clean(text, lower), engine="newmm", keep_whitespace=False)
     return [t for t in toks if t.strip() and not PUNCT_ONLY.fullmatch(t)]
