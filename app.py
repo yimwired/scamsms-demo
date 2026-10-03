@@ -54,7 +54,7 @@ EXAMPLES = {
 st.set_page_config(page_title="ScamSMS เช็ค SMS มิจฉาชีพ", page_icon="🛡️", layout="centered")
 
 
-@st.cache_resource
+@st.cache_resource(show_spinner="กำลังโหลดโมเดล...")  # the default shows "Running load_model()." to visitors
 def load_model():
     return joblib.load(MODEL) if MODEL.exists() else None
 
