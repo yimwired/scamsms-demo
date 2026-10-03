@@ -2,6 +2,9 @@
 [client]
 toolbarMode = "viewer"  # no Deploy button or dev menu in front of visitors
 
+[browser]
+gatherUsageStats = false  # nothing leaves the laptop at the booth, and it runs the same with no internet
+
 [theme]
 base = "light"
 primaryColor = "#17345f"            # brochure navy: buttons, active tab
