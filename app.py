@@ -33,6 +33,9 @@ PLACEHOLDER_TH = {"xurl": "มีลิงก์", "xlineid": "ชวนแอ�
 # Shorteners hide where a link really goes, which is worth telling the visitor.
 SHORTENERS = {"bit.ly", "cutt.ly", "tinyurl.com", "s.id", "shorturl.at", "rb.gy", "t.ly", "is.gd", "goo.gl", "t.co"}
 GOAL_RECALL, GOAL_FALSE_ALARM = 0.90, 0.15
+# Below this many non-space characters there is too little text to judge ("ไปไหนมา" scored 70%).
+# The shortest real scam in the data is 16 characters; only 2 of 2,927 real SMS are shorter than 15.
+MIN_CHARS = 15
 ORIGIN_TH = {"มือถือตัวเอง": "SMS ผู้จัดทำ", "ชุดข้อมูล ScamGuard": "ชุด ScamGuard", "ชุดข้อมูล ssivakorn": "ชุด ssivakorn"}
 
 # Booth shortcuts: real SMS from the dataset, one genuine and one scam per topic, so visitors
@@ -174,7 +177,9 @@ with tab_check:
         clicked = st.button("ตรวจ", type="primary", width="stretch")
         auto = st.session_state.pop("auto_check", False)
         checked = (clicked or auto) and txt.strip()
-        if checked and pipe.named_steps["tfidf"].transform([txt]).nnz == 0:
+        if checked and len(re.sub(r"\s", "", txt)) < MIN_CHARS:
+            st.info("ข้อความสั้นเกินไป จึงตัดสินไม่ได้ ลองวาง SMS ทั้งข้อความ")
+        elif checked and pipe.named_steps["tfidf"].transform([txt]).nnz == 0:
             # No known word at all: the score would just be the class prior (~50%), not a judgement.
             st.info("โมเดลไม่รู้จักคำในข้อความนี้เลย จึงตัดสินไม่ได้ ลองวาง SMS ทั้งข้อความ")
         elif checked:
